@@ -1,0 +1,48 @@
+iaddl: add a constant value to a register
+
+iaddl 0 F rB V
+
+icode, ifun: 1 byte
+F, rB: 1 byte
+V: 4 bytes
+
+Required Computations
+		iaddl F rB, V
+
+Fetch		icode:ifun <- M1[PC]
+		1:rB <- M1[PC+1]
+		valC <- M4[PC+2]
+		valP <- PC+6
+
+Decode		valB <- R[rB]
+
+Execute		valE <- valC + valB
+
+Memory
+
+Writeback	R[rB] <- valE
+
+Update PC	PC <- valP
+######################################################################################
+leave: prepare the stack for returning
+
+Required Computations
+
+		leave                           pop rA
+Fetch		icode:ifun <- M1[PC]	        icode:ifun <- M1[PC]
+					        rA:rB <- M1[PC+1]
+		valP <- PC+1                    valP <- PC+2
+
+Decode		valA <- R[%ebp]		        valA <- R[%esp]
+		valB <- R[%ebp]		        valB <- R[%esp]
+
+Execute		valE <- valB + 4	        valE <- valB + 4
+
+Memory		valM <- M4[valA]	        valM <- M4[valA]
+
+Writeback	R[%esp] <- valE	                R[%esp] <- valE
+		R[%ebp] <- valM		        R[rA] <- valM
+
+Update PC	PC <- valP	                PC <- valP
+
+

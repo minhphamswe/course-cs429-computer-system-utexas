@@ -1,0 +1,66 @@
+Student: Minh Pham
+EID: mlp2279
+CSID: minhpham
+
+4.51: Forwarding removed. Need to stall pipeline for everything. Fix.
+First we recognize that the original data hazards still apply. So, we
+need to stall for:
+	ret
+	branch instructions
+	store instructions that are followed by an ALU or a load that uses
+	the same instruction written to by the store, either as a source or
+	a destination.
+
+6.26
+Cache	m	C		B	E		S		t	s	b
+1.		32	1024	4	4		64		24	6	2
+2.		32	1024	4	256		1		30	0	2
+3.		32	1024	8	1		128		22	7	3
+4.		32	1024	8	128		1		29	0	3
+5.		32	1024	32	1		32		22	5	5
+6.		32	1024	32	4		8		24	3	5
+
+6.27
+Cache	m	C		B	E	S		t	s	b
+1.		32	2048	8	1	256		21	8	3
+2.		32	2048	4	4	128		23	7	2
+3.		32	1024	2	8	64		25	6	1
+4.		32	1024	32	2	16		23	4	5
+
+6.37
+
+A. B = 16; E = 1; C = 512 => S = 32, i.e. there are 32 sets x[0][i] 
+and x[1][i] are 128 * 4 = 512 bytes apart. 512 bytes / 16 
+bytes/block = 32 blocks. Since x[0][i] and x[1][i] are 32 blocks 
+apart, the cache is direct-mapped, and S = 32, they actually map to 
+the same cache set. Therefore, we actually miss twice every time we 
+go through the loop (25% cold misses, 75% conflict misses). Since we 
+only access memory twice during each loop, the miss rate is 100%
+
+B.
+If we double the cache size, we also double the number of sets. S is now
+64. This time each of x[0][i], x[1][i] maps to separate addresses for 
+every i. Since 512 bytes is big enough to hold an entire 128 ints, this
+eliminates all conflict misses, so the miss rate drops to
+the rate of cold misses, which is 25%.
+
+C.
+C = 512, E = 2, B = 16, so S = 16.
+This delivers the same result as B. Miss rate = 25%
+
+D.
+A larger cache size in case 3 would not help, since there are conflict
+misses in C to begin with.
+
+E.
+A larger block size, however, will help reduce the miss rate, because 
+we are accessing contiguous data, we are able to accurately prefetch 
+data to be used later. A larger block size prefetches more data at every
+step, so we don't have to stop (i.e. get a cold miss) to fetch as often.
+
+6.38
+Function	N=64	N=60
+sumA		25%		27%
+sumB		100%	100%
+sumC		50%		66%
+

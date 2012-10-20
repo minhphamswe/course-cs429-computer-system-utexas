@@ -1,0 +1,340 @@
+#######################################################################
+# Test for copying block of size 63;
+#######################################################################
+	.pos 0
+main:	irmovl Stack, %esp  	# Set up stack pointer
+	irmovl Stack, %ebp  	# Set up base pointer
+
+	# Set up arguments for copy function and then invoke it
+	irmovl $63, %eax		# src and dst have 63 elements
+	pushl %eax
+	irmovl dest, %eax	# dst array
+	pushl %eax
+	irmovl src, %eax	# src array
+	pushl %eax
+	call ncopy		 
+	halt			# should halt with num nonzeros in %eax
+StartFun:
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len ints to dst.
+# Return the number of positive ints (>0) contained in src.
+#
+# Student: Minh Pham
+# EID: mlp2279
+# CSID: minhpham
+#
+# ~~ Begin: MODIFICATIONS MADE ~~
+#
+# After adding iaddl to the hardware specs, remove all instructions
+# involving %edi (used as a temporary variable) to iaddl.
+# This removes some Load/Use dependency complication.
+# We now also have register %edi free.
+#
+# Changed the first loop's first check to default to excute the loop improve branch prediction in the normal case.
+# BEFORE
+# 	jle 	Done
+# AFTER
+#	jg 	L40
+#	jmp 	Done
+#
+# Unrolled the outer loop to k = 4. 
+# After that, added further unrolled loops with k = 2 and k = 1.
+#
+# Instead of using a limit value as outlined in CS:APP, and
+# increment a temporary variable i to that limit, we subtract
+# (k-1) from the length to get the limit, and decrement the
+# limit directly in the loop. After the loop terminates, we add
+# back (k-1) to length.
+#  
+# We note now that the second and third unrolled loops
+# (k = 2 and k = 1) execute at most only once.
+# This is because after the first loop (unrolled, k = 4) executes, the
+# length of the array is at most 3.      
+# After this realization, we remove the loop-back controls of the
+# second and third "unrolled loops".
+# We also remove the incrementing of source and destination pointers
+# in the final "loop".
+# 
+# At this point we mysteriously realized that Y86 supports addressing
+# with constant offset.       
+# We now load and store values from and to source and destination
+# using offset, and consolidate the incrementations.
+#
+# The store / andl operation that is performed right after the load
+# now creates a data hazard (this spot was previously filled by
+# the instruction that increments the source pointer).     
+# Since we still have that registered that was freed when we
+# implemented iaddl, we can load data into that register while
+# the first register is being loaded.
+# While the second register is being loaded, we then process the first
+# register.
+# 
+# ~~ End: MODIFICATIONS MADE
+##################################################################
+# Do not modify this portion
+# Function prologue.
+ncopy:	pushl   %ebp		# Save old frame pointer
+	rrmovl  %esp,%ebp	# Set up new frame pointer
+	pushl   %esi		# Save callee-save regs
+	pushl   %ebx
+	pushl   %edi
+	mrmovl  8(%ebp),%ebx	# src
+	mrmovl  16(%ebp),%edx	# len
+	mrmovl  12(%ebp),%ecx	# dst
+
+##################################################################
+# You can modify this portion
+# src is at %ebx, dst is at %ecx, len is at %edx, val is at %eax
+# Loop unrolling k = 5
+	# Loop header
+Loop4:
+        xorl    %eax,%eax		# count = 0
+	iaddl	$-3, %edx		# length <- limit = length - k + 1
+        jg      L40
+	jmp     Loop2		        # if length <= 2, goto Loop2
+
+L40:   
+        mrmovl  (%ebx), %esi	        # read 1st val from src
+        mrmovl  4(%ebx), %edi	        # read 2nd val from src
+	andl    %esi, %esi		# 1st val > 0?
+        jle     L41
+        iaddl   $1, %eax
+
+L41:
+	andl    %edi, %edi		# 2nd val > 0?
+	rmmovl  %esi, (%ecx)	        # store 1st val to dst
+	rmmovl  %edi, 4(%ecx)	        # store 2nd val to dst
+        jle     L42
+        iaddl   $1, %eax
+
+L42:
+        mrmovl  8(%ebx), %esi	        # read 1st val from src
+        mrmovl  12(%ebx), %edi	        # read 2nd val from src
+	andl    %esi, %esi		# 1st val > 0?
+        jle     L43
+        iaddl   $1, %eax
+
+L43:
+	andl    %edi, %edi		# 2nd val > 0?
+	rmmovl  %esi, 8(%ecx)	        # store 1st val to dst
+	rmmovl  %edi, 12(%ecx)	        # store 2nd val to dst
+        jle     Loop4Cond
+        iaddl   $1, %eax
+
+Loop4Cond:	
+        iaddl   $16, %ebx		# src += 4
+	iaddl   $16, %ecx		# dst += 4
+	iaddl	$-4, %edx		# limit -= 4
+	jg      L40			# if limit > 0, goto L40
+
+Loop2:
+        iaddl   $2, %edx
+        jle     Loop1
+
+L20:
+        mrmovl  (%ebx), %esi	        # read 1st val from src
+	mrmovl  4(%ebx), %edi	        # read 2nd val from src
+	andl    %esi, %esi		# 1st val > 0?
+        jle     L21
+        iaddl   $1, %eax
+
+L21:
+	andl    %edi, %edi		# 2nd val > 0?
+        rmmovl  %esi, (%ecx)	        # store 1st value to dst
+	rmmovl  %edi, 4(%ecx)	        # store 2nd value to dst
+        jle     Loop2Cond
+        iaddl   $1, %eax
+
+Loop2Cond:
+        iaddl   $8, %ebx		# src += 2
+        iaddl   $8, %ecx		# dst += 2
+        iaddl	$-2, %edx		# limit -= k
+
+Loop1:
+	iaddl 	$1, %edx                # restore length to its "would be" value
+	jle	Done
+
+FLoop:
+	mrmovl  (%ebx), %esi	        # read val from src
+	rmmovl  %esi, (%ecx)	        # store val to dst
+	andl    %esi, %esi		# val <= 0?
+	jle     Done		        # if so, goto FLCond
+	iaddl   $1, %eax		# count++
+	
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	popl %edi               # Restore callee-save registers
+	popl %ebx
+	popl %esi
+	rrmovl %ebp, %esp
+	popl %ebp
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */
+EndFun:
+
+###############################
+# Source and destination blocks 
+###############################
+	.align 4
+src:
+	.long -1
+	.long 2
+	.long 3
+	.long -4
+	.long -5
+	.long -6
+	.long 7
+	.long 8
+	.long -9
+	.long -10
+	.long 11
+	.long -12
+	.long -13
+	.long -14
+	.long 15
+	.long 16
+	.long -17
+	.long 18
+	.long -19
+	.long 20
+	.long -21
+	.long 22
+	.long -23
+	.long 24
+	.long -25
+	.long -26
+	.long -27
+	.long -28
+	.long -29
+	.long 30
+	.long 31
+	.long 32
+	.long 33
+	.long 34
+	.long 35
+	.long 36
+	.long 37
+	.long 38
+	.long -39
+	.long -40
+	.long -41
+	.long -42
+	.long -43
+	.long 44
+	.long -45
+	.long -46
+	.long -47
+	.long -48
+	.long 49
+	.long -50
+	.long 51
+	.long -52
+	.long -53
+	.long 54
+	.long 55
+	.long -56
+	.long 57
+	.long 58
+	.long 59
+	.long 60
+	.long -61
+	.long 62
+	.long 63
+	.long 0xbcdefa # This shouldn't get moved
+
+	.align 16
+Predest:
+	.long 0xbcdefa
+dest:
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+	.long 0xcdefab
+Postdest:
+	.long 0xdefabc
+
+.align 4
+# Run time stack
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+	.long 0
+
+Stack:

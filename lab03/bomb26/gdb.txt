@@ -1,0 +1,5 @@
+A debugging session is active.
+
+	Inferior 1 [process 11406] will be killed.
+
+Quit anyway? (y or n) 

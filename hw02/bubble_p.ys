@@ -1,0 +1,94 @@
+	.pos 0
+init:
+	irmovl  Stack, %esp
+	irmovl  Stack, %ebp
+	call    Main
+	halt
+
+	.align 4
+array:
+	.long   0x11
+	.long   0x8
+	.long   0x7
+	.long   0x9
+	.long   0x2
+	.long   0x10
+	.long   0x2
+	.long   0x3
+	.long   0x7
+
+Main:
+	pushl   %ebp
+	rrmovl  %esp, %ebp
+
+        irmovl  $9, %eax
+	pushl   %eax
+	irmovl  array, %eax
+	pushl   %eax
+	call    bubble_p
+
+        rrmovl  %ebp, %esp
+	popl    %ebp
+	ret
+
+bubble_p:
+	pushl   %ebp
+	rrmovl  %esp, %ebp
+
+        mrmovl  12(%ebp), %eax
+        irmovl  $1, %ebx
+        subl    %ebx, %eax      # eax = count - 1
+	jle	exit            # if (eax <= 0) -> goto exit
+
+outer_loop:
+        irmovl  0, %ecx                 # ecx = 0
+        rrmovl  %eax, %ebx
+        subl    %ecx, %ebx
+        jle     outer_loop_update       # if (eax <= ecx) -> goto outer_loop
+
+inner_loop:
+        pushl   %ecx            # save ecx (save i)
+        addl    %ecx, %ecx
+        addl    %ecx, %ecx      # [i = i * 4]
+
+        mrmovl  8(%ebp), %edx
+        irmovl  $4, %ebx
+        addl    %ebx, %edx
+        addl    %ecx, %edx      # edx = data + i*4 + 4
+
+        mrmovl  8(%ebp), %ebx
+        addl    %ebx, %ecx      # ecx = data + i*4
+
+        mrmovl  (%edx), %ebx
+        mrmovl  (%ecx), %esi
+        subl    %esi, %ebx
+        jge     pop_ecx         # if (*edx >= *ecx) -> goto pop_ecx
+     
+swap:
+        mrmovl  (%ecx), %esi    # eax = *ecx
+        mrmovl  (%edx), %ebx    # ebx = *edx
+        rmmovl  %esi, (%edx)    # *edx = eax
+        rmmovl  %ebx, (%ecx)    # *ecx = ebx
+
+pop_ecx:        
+	popl    %ecx            # restore ecx (restore i)
+
+inner_loop_update:
+        irmovl  $1, %ebx
+        addl    %ebx, %ecx      # ecx++
+        rrmovl  %ecx, %ebx      
+        subl    %eax, %ebx
+        jl      inner_loop      # if (ecx < eax) -> goto inner_loop
+        
+outer_loop_update:
+        irmovl  $1, %ebx
+        subl    %ebx, %eax      # eax--
+        jg      outer_loop      # if (eax > 0) -> goto outer_loop
+	
+exit:
+	rrmovl  %ebp, %esp
+	popl    %ebp
+	ret
+
+	.pos 0x200
+Stack:

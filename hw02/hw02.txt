@@ -1,0 +1,57 @@
+Student: Minh Pham
+EID: mlp2279
+CSID: minhpham
+
+Homework 2
+
+4.43 
+A. The code sequence does NOT correctly describe the behavior of the 
+instruction pushl %esp. In the sequence presented the value pushed into the 
+stack would be new (already decremented) value of %esp, not the old value of 
+%esp, which is what gets pushed on the IA32.
+
+B. Assuming we can write something to an address beyond %esp (which I think would actually cause an exception to be triggered instead), we can do something like this:
+
+movl REG, -4(%esp)
+subl $4, %esp
+
+If that is illegal, then I am stuck.
+
+4.44
+A. This code sequence does NOT correctly describe the behavior of the 
+instruction popl %esp. The IA32 convention puts into %esp exactly the value 
+of the word at %esp before it was incremented. This code sequence puts into 
+%esp that value incremented by 4.
+
+B. Once again I have to assume we can read from a value beyond the stack 
+pointer. Then the code sequence would look like this:
+
+addl $4, %esp
+movl 4(%esp), REG
+
+This would probably cause an exception, in which case I would be stuck.
+
+4.45
+Please see bubble_p.c and bubble_p.ys
+
+4.47
+Fetch:      icode:ifun <- M1[PC]
+            rA:rB <- M1[PC + 1]
+            valC <- M4[PC + 2]
+            valP <- PC + 6
+Decode:     valB <- R[rB]
+Execute:    valE <- valB + valC
+            Set CC
+Memory:
+Write back: R[rB] <- valE
+PC Update:  PC <- valP
+
+4.48
+Fetch:      icode:ifun <- M1[PC]
+            valP <- PC + 1
+Decode:     valA <- R[%ebp]
+            valB <- R[%ebp]
+Execute:    valE <- valB + 4
+Memory:     valM <- M4[valE]
+Write back: R[%esp] <- valA
+            R[%ebp] <- valM

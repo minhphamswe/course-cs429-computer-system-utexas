@@ -1,0 +1,71 @@
+# rsum.ys
+# Recursive version of sum_list
+# Student: Minh Pham
+# EID: mlp2279
+
+# This code should be similar to the code in sum.ys, except that it should 
+# use a function rsum list that recursively sums a list of numbers
+
+# Sample linked list
+
+        .pos    0
+init:
+        irmovl  Stack, %ebp
+        irmovl  Stack, %esp
+        call    Main
+        halt
+
+        .align  4
+ele1:
+        .long   0x00a
+        .long   ele2
+ele2:
+        .long   0x0b0
+        .long   ele3
+ele3:
+        .long   0xc00
+        .long   0
+
+Main:
+        pushl   %ebp
+        rrmovl  %esp, %ebp
+        
+        irmovl  ele1, %eax
+        pushl   %eax
+        call    rsum
+
+        rrmovl  %ebp, %esp
+        popl    %ebp
+        ret
+
+rsum:
+        pushl   %ebp            # save old base pointer
+        rrmovl  %esp, %ebp      # update stack pointer
+
+        irmovl  $0, %eax        # eax = 0
+        mrmovl  8(%ebp), %ecx
+        rrmovl  %ecx, %ebx
+        andl    %ebx, %ebx
+        je      exit            # if (ls == 0) => exit
+
+step:
+        mrmovl  (%ecx), %eax    # eax = ls->val
+        pushl   %eax            # save ls->val
+
+        irmovl  $4, %ebx
+        addl    %ebx, %ecx
+        mrmovl  (%ecx), %ecx    # ecx = ls->next
+        pushl   %ecx
+        call    rsum            # eax = rsum(ls->next)
+
+        popl    %ebx            # discard the input for the recursive call
+        popl    %ebx
+        addl    %ebx, %eax      
+        
+exit:
+        rrmovl  %ebp, %esp
+        popl    %ebp
+        ret
+
+        .pos 0x100
+Stack:                          # Stack starts here and grows down

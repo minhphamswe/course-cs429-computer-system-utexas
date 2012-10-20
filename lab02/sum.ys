@@ -1,0 +1,72 @@
+# sum.ys
+# Sum the elements of a linked list
+# Student: Minh Pham
+# EID: mlp2279
+
+# Write a Y86 program sum.ys that iteratively sums the elements of a
+# linked list. Your program should consist of some code that sets up
+# the stack structure, invokes a function, and then halts.
+
+# Sample linked list
+        .pos    0
+init:
+        irmovl  Stack, %ebp
+        irmovl  Stack, %esp
+        call    Main
+        halt
+
+        .align  4
+ele1:
+        .long   0x001
+        .long   ele2
+ele2:
+        .long   0x0b2
+        .long   ele3
+ele3:
+        .long   0xc03
+        .long   0
+
+Main:
+        pushl   %ebp
+        rrmovl  %esp, %ebp
+        
+        irmovl  ele1, %eax
+        pushl   %eax
+        call    sum
+
+        rrmovl  %ebp, %esp
+        popl    %ebp
+        ret
+
+sum:
+        pushl   %ebp            # save old base pointer
+        rrmovl  %esp, %ebp      # update stack pointer
+
+        irmovl  $0, %eax        # eax = 0
+        mrmovl  8(%ebp), %ecx   # ecx <- ls
+        rrmovl  %ecx, %ebx
+        andl    %ebx, %ebx
+        je      exit            # if (ls == 0) => exit
+
+loop:
+        mrmovl  (%ecx), %ebx    # ebx = ls->val
+        addl    %ebx, %eax      # eax = eax + ebx
+
+        irmovl  $4, %ebx        # ebx is free now, using as scratch
+        addl    %ebx, %ecx
+        mrmovl  (%ecx), %ecx    # ls = ls->next
+
+        rrmovl  %ecx, %ebx
+        andl    %ebx, %ebx
+        jne     loop            # if (ls != 0) => loop
+
+exit:
+        rrmovl  %ebp, %esp
+        popl    %ebp
+        ret
+
+        .pos 0x100
+Stack:                          # Stack starts here and grows down
+        
+        
+        

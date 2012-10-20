@@ -1,0 +1,91 @@
+Modification made to ncopy.ys:
+ABORTED CHANGES:
+1) Changed branching condition to improve prediction in the common case.
+BEFORE:
+   Loop: ...
+        jle Npos
+         ...
+AFTER:
+   Loop: ...
+        jg Else
+        jmp Npos
+   Else: ...
+
+NOTE: CANCELLED. Branch prediction is not improved, since the condition is the sign of the number in the data, which is unpredictable.
+
+2) Move irmovl $1, %edi to the main loop clause to avoid having to stall for Load/Use dependency.
+
+3) Change register-register add to immediate-register add to avoid having to update %edi twice in every loop. Move the update out of the loop.
+BEFORE:
+   Loop: ...
+        irmovl  $1, %edi        ; <- first update
+        ...
+   Else:
+        addl    %edi, %eax
+   Npos:
+        subl    %edi, %edx
+        irmovl  $4, %edi        ; <- second update
+        addl    %edi, %ebx      ; <- stalling for load/use dependency
+        addl    %edi, %ecx
+
+AFTER:
+        irmovl $4, %edi         ; <- update moved outside loop
+
+4) Update ebx after reading value from it. Squeeze it between writing to and reading from %esi to avoid Load/Use stalling penalty.
+
+6) Replace andl %edx, %edx with iaddl $-1, %edx. Removed one instruction.
+
+BEFORE:
+   Npos: ...
+	iaddl $-1, %edx
+	 ...
+	andl %edx, %edx
+	jg Loop
+
+AFTER:
+   Npos: ...
+	iaddl $-1, %edx
+	jg Loop 	 
+
+ACCEPTED CHANGES:
+
+5) 
+After adding iaddl to the hardware specs, remove all instructions involving %edi (used as a temporary variable) to iaddl. 
+This removes some Load/Use dependency complication.
+We now also have register %edi free.
+
+7) Changed the first loop's first check to default to excute the loop improve branch prediction in the normal case.
+
+BEFORE:
+	jle 	Done
+
+AFTER:
+	jg 	Loop
+	jmp 	Done
+
+8) 
+Unrolled the outer loop to k = 4. 
+After that, added further unrolled loops with k = 2 and k = 1.
+Instead of using a limit value as outlined in CS:APP, and increment a temporary variable i to that limit, we subtract (k-1) from the length to get the limit, and decrement the limit directly in the loop. After the loop terminates, we add back (k-1) to length.
+
+9) 
+We note now that the second and third unrolled loops (k = 2 and k = 1) execute at most only once.
+This is because after the first loop (unrolled, k = 4) executes, the length of the array is at most 3.
+After this realization, we remove the loop-back controls of the second and third "unrolled loops".
+We also remove the incrementing of source and destination pointers in the final "loop".
+
+10)
+At this point we mysteriously realized that Y86 supports addressing with constant offset.
+We now load and store values from and to source and destination using offset, and consolidate the incrementations.
+
+11)
+The store / andl operation that is performed right after the load now creates a data hazard (this spot was previously filled by the instruction that increments the source pointer).
+Since we still have that registered that was freed when we implemented iaddl, we can load data into that register while the first register is being loaded.
+While the second register is being loaded, we then process the first register.
+
+
+############################################################
+
+Modifications made to pipe-full.hcl
+
+1) Added iaddl from lab05. Just because.

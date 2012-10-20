@@ -1,0 +1,118 @@
+Phase 1: String at 0x8049341
+When I get angry, Mr. Bigglesworth gets upset.
+
+Phase 2: 6 Fibbonaci number starting at 0
+0 1 1 2 3 5
+
+Phase 3: 2 numbers, and some obfuscated computation
+eax -= 0x2af
+if -0xc(%ebp) > 0x5
+   explode_bomb
+else if eax == -0x10(%ebp)
+
+H1: 0 154   <OK>
+
+Phase 4: 2 numbers
+
+H1:  7 31   <Fail>
+H2: 31 31   <Fail>
+h3: 13 31   <OK>
+
+Phase 5: string of 6 characters. The least signifant hex value of each
+character is used as index to look up value in an array (see
+below). The sum of those values must equal 61.
+
+There are many answers
+444443 is one
+DrEvil is another one
+
+Phase 6:
+
+6 numbers. The 
+6 numbers representing indices in a 1-indexed linked list. The linked
+list will be reordered according to those indices, and written back
+out. The reordered linked list must be sorted from greatest to least.
+
+H1: 3 4 2 5 1 6    <Fail>
+H2: 6 1 5 2 4 3    <Fail>
+H3: 4 3 5 2 6 1    <OK>
+H4: 1 6 2 5 3 4
+
+read_six_numbers
+
+EXPLORED ADDRESSES
+<address>       <type>          <what>          <phase>
+0x8049341       function        explode_bomb    overall
+
+0x804a5ac	string          %d %d           phase_3, phase_4
+0x804a4e0	pointer	        8049022         phase_3
+
+0x804a500       integer         2               phase_4         0
+0x804a504       integer         10              phase_4         1        
+0x804a508       integer         6               phase_4         2
+0x804a50c       integer         1               phase_4         3
+0x804a510       integer         12              phase_4         4
+0x804a514       integer         16              phase_4         5
+0x804a518       integer         9               phase_4         6
+0x804a51c       integer         3               phase_4         7
+0x804a520       integer         4               phase_4         8
+0x804a524       integer         7               phase_4         9
+0x804a528       integer         14              phase_4         A
+0x804a52c       integer         5               phase_4         B
+0x804a530       integer         11              phase_4         C
+0x804a534       integer         8               phase_4         D
+0x804a538       integer         15              phase_4         E
+0x804a53c       integer         13              phase_4         F
+
+0x804c4fc       integer         119             phase_6
+0x804c4f0       integer         339             phase_6
+0x804c4e4       integer         910             phase_6
+0x804c4d8       integer         819             phase_6
+0x804c4cc       integer         272             phase_6
+0x804c4c0       integer         62              phase_6
+
+0x804c500       integer         1               phase_6
+0x804c4f4       integer         2               phase_6
+0x804c4e8       integer         3               phase_6
+0x804c4dc       integer         4               phase_6
+0x804c4d0       integer         5               phase_6
+0x804c4c4       integer         6               phase_6
+
+0x804c504       pointer         0x804c4f0       phase_6
+0x804c4f8       pointer         0x804c4e4       phase_6
+0x804c4ec       pointer         0x804c4d8       phase_6
+0x804c4e0       pointer         0x804c4cc       phase_6
+0x804c4d4       pointer         0x804c4c0       phase_6
+0x804c4c8       pointer         0 (NULL)        phase_6
+
+0x804c574       integer         6               secret_phase    L2
+0x804c578       pointer         804c550
+0x804c57c       pointer         804c52c
+
+0x804c5a4       integer         8               secret_phase    L1
+0x804c5a8       pointer         0x804c574
+0x804c5ac       pointer         0x804c58c
+
+0x804c58c       integer         22              secret_phase    L2
+0x804c590       pointer         0x804c520
+0x804c594       pointer         0x804c594
+
+0x804c5b0       integer         36              secret_phase    L0
+0x804c5b4       pointer         0x804c5a4
+0x804c5b8       pointer         0x804c598
+
+0x804c580       integer         45              secret_phase    L2
+0x804c584       pointer         0x804c55c
+0x804c588       pointer         0x804c514
+
+0x804c514       integer         47              secret_phase    L3
+0x804c518       pointer         0 (NULL)
+0x804c51c       pointer         0 (NULL)
+
+0x804c598       integer         50              secret_phase    L1
+0x804c59c       pointer         0x804c580
+0x804c5a0       pointer         0x804c568
+
+0x804c568       integer         107             secret_phase    L2
+0x804c56c       pointer         0x804c544
+0x804c570       pointer         0x804c508

@@ -1,0 +1,84 @@
+# copy.ys
+# Copy src to dest and return xor checksum of src
+# Student: Minh Pham
+# EID: mlp2279
+
+# Write a program (copy.ys) that copies a block of words from one part of memory
+# to another (non-overlapping area) area of memory, computing the checksum (Xor)
+# of all the words copied.
+# Your program should consist of code that sets up a stack frame, invokes a 
+# function copy block, and then halts.
+
+        .pos    0
+init:
+        irmovl  Stack, %ebp
+        irmovl  Stack, %esp
+        call    Main
+        halt
+
+        .align  4
+src:                            # Source block
+        .long   0x00a
+        .long   0x0b0
+        .long   0xc00
+dest:                           # Destination block
+        .long   0x111
+        .long   0x222
+        .long   0x333
+
+Main:
+        pushl   %ebp
+        rrmovl  %esp, %ebp
+
+        irmovl  $3, %eax
+        pushl   %eax
+        irmovl  dest, %eax
+        pushl   %eax
+        irmovl  src, %eax
+        pushl   %eax
+        call    copy
+        
+        rrmovl  %ebp, %esp
+        popl    %ebp
+        ret
+
+copy:
+        pushl   %ebp
+        rrmovl  %esp, %ebp
+
+        irmovl  $0, %eax        # eax = 0
+        mrmovl  8(%ebp), %ecx   # ecx = src
+        mrmovl  12(%ebp), %edx  # edx = dest
+        mrmovl  16(%ebp), %ebx  # ebx = len
+
+        rrmovl  %ebx, %edi
+        andl    %edi, %edi
+        jle     exit            # if (len <= 0) => exit
+
+loop:
+        mrmovl  (%ecx), %edi    # val = *src
+        rmmovl  %edi, (%edx)    # *dest = val
+
+        xorl    %edi, %eax      # eax ^= edi
+
+        irmovl  $4, %edi
+        addl    %edi, %ecx      # src++
+        addl    %edi, %edx      # dest++
+
+        irmovl  $1, %edi
+        subl    %edi, %ebx
+        rrmovl  %ebx, %edi
+        andl    %edi, %edi      # len--
+
+        jg      loop            # if (len > 0) => loop
+        
+exit:
+        rrmovl  %ebp, %esp
+        popl    %ebp
+        ret
+
+        .pos 0x100
+Stack:                          # Stack starts here and grows down
+
+
+

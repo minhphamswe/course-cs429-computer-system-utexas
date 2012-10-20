@@ -1,0 +1,12 @@
+# Editor-generated files
+*~
+*#
+
+# Object files
+*.o
+
+# Y86 Assembly object files
+*.yo
+
+# File system files
+.fuse_hidden*
